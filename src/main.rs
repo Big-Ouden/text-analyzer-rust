@@ -75,7 +75,7 @@ fn count_char(text: &str) -> usize {
 }
 
 fn count_lines(text: &str) -> usize {
-    panic!("count_lines not implemented yet");
+    text.lines().count()
 }
 
 // *********      Test     **********
@@ -83,8 +83,6 @@ fn count_lines(text: &str) -> usize {
 mod tests {
     use super::*;
     use tempfile::NamedTempFile;
-
-    use crate::FunctionResult;
 
     #[test]
     fn test_count_words() {
@@ -102,6 +100,13 @@ mod tests {
         assert_eq!(count_char(" abc "), 5);
         assert_eq!(count_char("a.b.c"), 5);
         assert_eq!(count_char("😊"), 1);
+    }
+
+    #[test]
+    fn test_count_lines() {
+        assert_eq!(count_lines("1\n2\n2\n4"), 4);
+        assert_eq!(count_lines("1"), 1);
+        assert_eq!(count_lines(""), 0);
     }
 }
 
