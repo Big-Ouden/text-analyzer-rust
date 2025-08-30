@@ -50,6 +50,7 @@ type FunctionResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 // ********* Structures **********
 
+#[derive(Debug, Eq, PartialEq)]
 struct Report {
     char_count: usize,
     word_count: usize,
@@ -57,13 +58,12 @@ struct Report {
 }
 
 // ********* Functions **********
-
-fn analyze(text: String) -> FunctionResult<Report> {
-    panic!("Analyze not implemented yet");
-}
-
 fn print_report(report: Report) -> FunctionResult<()> {
-    panic!("print report not implemented yet");
+    println!(
+        "char count : {}, word_count: {}, line_count: {}",
+        report.char_count, report.word_count, report.line_count
+    );
+    Ok(())
 }
 
 fn count_words(text: &str) -> usize {
@@ -76,6 +76,15 @@ fn count_char(text: &str) -> usize {
 
 fn count_lines(text: &str) -> usize {
     text.lines().count()
+}
+
+fn analyze(text: &str) -> FunctionResult<Report> {
+    let mut report: Report = Report {
+        char_count: count_char(&text),
+        word_count: count_words(&text),
+        line_count: count_lines(&text),
+    };
+    Ok(report)
 }
 
 // *********      Test     **********
@@ -108,6 +117,19 @@ mod tests {
         assert_eq!(count_lines("1"), 1);
         assert_eq!(count_lines(""), 0);
     }
+
+    #[test]
+    fn test_analyze() -> FunctionResult<()> {
+        let text: &str = "aaa\naa";
+        let expected_report: Report = Report {
+            char_count: 6,
+            word_count: 2,
+            line_count: 2,
+        };
+
+        assert_eq!(analyze(&text)?, expected_report);
+        Ok(())
+    }
 }
 
 // ********* Main Function **********
@@ -132,7 +154,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             // analyze text
-            let report: Report = analyze(content)?;
+            let report: Report = analyze(&content)?;
 
             // print result
             print_report(report)?;
