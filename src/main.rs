@@ -58,6 +58,23 @@ struct Report {
 }
 
 // ********* Functions **********
+fn read_input(file: Option<PathBuf>) -> FunctionResult<String> {
+    let mut content = String::new();
+    if let Some(path) = file {
+        // case 1 :  read specified file
+        let data = fs::read_to_string(path)?;
+        Ok(data)
+    } else if !atty::is(Stream::Stdin) {
+        // case 2 : stdin not a terminal, read from a pipe
+        io::stdin().read_to_string(&mut content)?;
+        Ok(content)
+    } else {
+        // case 3 : stdin is a interactive terminal and no file specified
+        eprintln!("No input provided. Use --file <path> or pipe data into stdin.");
+        std::process::exit(1);
+    }
+}
+
 fn print_report(report: Report) -> FunctionResult<()> {
     println!(
         "char count : {}, word_count: {}, line_count: {}",
@@ -139,19 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Analyze { file } => {
-            let mut content = String::new();
-
-            if let Some(path) = file {
-                // case 1 :  read specified file
-                content = fs::read_to_string(path)?;
-            } else if !atty::is(Stream::Stdin) {
-                // case 2 : stdin not a terminal, read from a pipe
-                io::stdin().read_to_string(&mut content)?;
-            } else {
-                // case 3 : stdin is a interactive terminal and no file specified
-                eprintln!("No input provided. Use --file <path> or pipe data into stdin.");
-                std::process::exit(1);
-            };
+            let content: String = read_input(file)?;
 
             // analyze text
             let report: Report = analyze(&content)?;
