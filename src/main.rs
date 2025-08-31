@@ -12,12 +12,34 @@
 
 use atty::Stream;
 use clap::{Parser, Subcommand};
+use crossterm::{
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
 use prettytable::{Table, cell, row};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{
     fs,
     io::{self, Read},
     path::PathBuf,
 };
+
+// ********* ratatui Stuff **********
+
+fn init_terminal() -> io::Result<Terminal<CrosstermBackend<std::io::Stdout>>> {
+    enable_raw_mode()?; // mode brut
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout);
+    Ok(Terminal::new(backend)?)
+}
+
+fn restore_terminal() -> io::Result<()> {
+    disable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, LeaveAlternateScreen)?;
+    Ok(())
+}
 
 // ********* CLI Stuff **********
 
