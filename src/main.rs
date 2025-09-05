@@ -12,12 +12,7 @@
 
 use atty::Stream;
 use clap::{Parser, Subcommand};
-use crossterm::{
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
-};
 use prettytable::{Table, cell, row};
-use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{
     fs,
     io::{self, Read},
@@ -25,9 +20,14 @@ use std::{
 };
 
 // ********* ratatui Stuff **********
+use crossterm::{
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
 fn init_terminal() -> io::Result<Terminal<CrosstermBackend<std::io::Stdout>>> {
-    enable_raw_mode()?; // mode brut
+    enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
@@ -39,6 +39,33 @@ fn restore_terminal() -> io::Result<()> {
     let mut stdout = io::stdout();
     execute!(stdout, LeaveAlternateScreen)?;
     Ok(())
+}
+
+use ratatui::layout::{Constraint, Direction, Layout};
+use ratatui::style::{Color, Style};
+use ratatui::widgets::{Block, Borders, Paragraph};
+
+fn ui(f: &mut ratatui::Frame, report: &Report) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints([Constraint::Percentage(100)].as_ref())
+        .split(f.size());
+
+    let text = format!(
+        "Characters: {}\nWords: {}\nLines: {}",
+        report.char_count, report.word_count, report.line_count
+    );
+
+    let paragraph = Paragraph::new(text)
+        .block(
+            Block::default()
+                .title("Text Analysis Report")
+                .borders(Borders::ALL),
+        )
+        .style(Style::default().fg(Color::White));
+
+    f.render_widget(paragraph, chunks[0]);
 }
 
 // ********* CLI Stuff **********
@@ -98,10 +125,38 @@ fn read_input(file: Option<PathBuf>) -> FunctionResult<String> {
 }
 
 fn print_report(report: Report) -> FunctionResult<()> {
-    println!(
-        "char count : {}, word_count: {}, line_count: {}",
-        report.char_count, report.word_count, report.line_count
-    );
+    let mut terminal = init_terminal()?;
+
+    terminal.draw(|f| {
+        // Utilisation d'un block basique avec le titre
+        let size = f.size();
+        let block = ratatui::widgets::Block::default()
+            .title("Report")
+            .borders(ratatui::widgets::Borders::ALL);
+
+        f.render_widget(block, size);
+
+        // Tu peux ajouter un Paragraph avec ton report ici
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::Paragraph;
+
+        let lines = vec![
+            Line::from(vec![Span::raw(format!("Chars: {}", report.char_count))]),
+            Line::from(vec![Span::raw(format!("Words: {}", report.word_count))]),
+            Line::from(vec![Span::raw(format!("Lines: {}", report.line_count))]),
+        ];
+        let paragraph = Paragraph::new(lines);
+
+        f.render_widget(paragraph, size);
+    })?;
+
+    // ⚠️ Si tu restaures direct, tu "casses" l'affichage.
+    // À ce stade, soit tu:
+    //  - attends un input utilisateur (genre touche q), soit
+    //  - tu fais un sleep pour voir le rendu avant le restore.
+    std::thread::sleep(std::time::Duration::from_secs(3));
+
+    restore_terminal()?;
     Ok(())
 }
 
